@@ -1,0 +1,143 @@
+/*
+ * 预处理指令示例 - Gbox引擎
+ * 展示在Gbox中使用#define和条件编译
+ */
+
+// 数值常量定义（Gbox不支持const）
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+#define MAX_ENEMIES 10
+#define PLAYER_SPEED 5.0
+
+// 字符串常量
+#define GAME_TITLE "预处理器示例"
+#define VERSION "1.0.0"
+#define COPYRIGHT "版权所有 © 2023"
+
+// 条件编译标志
+#define DEBUG
+#define DESKTOP
+//#define MOBILE
+
+// 枚举常量替代方案
+enum Constants
+{
+    MAX_PLAYERS = 4,
+    DEFAULT_LIVES = 3,
+    BULLET_DAMAGE = 10,
+    ENEMY_HEALTH = 50
+};
+
+// 常量的应用示例
+obj m_pPlayer;
+int m_nLives = Constants.DEFAULT_LIVES;
+
+// 显示常量值
+void ShowConstants() {
+    ?"数值常量示例:";
+    ?"SCREEN_WIDTH = " + SCREEN_WIDTH;
+    ?"SCREEN_HEIGHT = " + SCREEN_HEIGHT;
+    ?"MAX_ENEMIES = " + MAX_ENEMIES;
+    ?"PLAYER_SPEED = " + PLAYER_SPEED;
+    
+    ?"字符串常量示例:";
+    ?"GAME_TITLE = " + GAME_TITLE;
+    ?"VERSION = " + VERSION;
+    ?"COPYRIGHT = " + COPYRIGHT;
+    
+    ?"枚举常量示例:";
+    ?"Constants.MAX_PLAYERS = " + Constants.MAX_PLAYERS;
+    ?"Constants.DEFAULT_LIVES = " + Constants.DEFAULT_LIVES;
+    ?"Constants.BULLET_DAMAGE = " + Constants.BULLET_DAMAGE;
+    ?"Constants.ENEMY_HEALTH = " + Constants.ENEMY_HEALTH;
+}
+
+// 条件编译示例
+void ShowPlatformInfo() {
+    #ifdef DEBUG
+        ?"调试模式已启用";
+    #else
+        ?"发布模式已启用";
+    #endif
+    
+    #ifdef DESKTOP
+        ?"目标平台: 桌面";
+    #endif
+    
+    #ifdef MOBILE
+        ?"目标平台: 移动设备";
+    #else
+        ?"移动设备支持未启用";
+    #endif
+}
+
+// 基于条件编译的日志功能
+void LogMessage(string msg) {
+    #ifdef DEBUG
+        ?"[调试日志] " + msg;
+    #endif
+}
+
+// 结合条件编译和宏常量
+void InitializeGame() {
+    ?"初始化游戏...";
+    ?"游戏名称: " + GAME_TITLE;
+    ?"版本: " + VERSION;
+    
+    #ifdef DEBUG
+        LogMessage("屏幕分辨率: " + SCREEN_WIDTH + "x" + SCREEN_HEIGHT);
+        LogMessage("最大敌人数量: " + MAX_ENEMIES);
+        LogMessage("最大玩家数量: " + Constants.MAX_PLAYERS);
+    #endif
+    
+    // 根据平台选择不同的初始化
+    #ifdef MOBILE
+        LogMessage("使用触摸控制");
+        InitializeTouchControls();
+    #else
+        LogMessage("使用键盘控制");
+        InitializeKeyboardControls();
+    #endif
+    
+    ?"初始化完成";
+}
+
+// 平台特定的初始化函数
+void InitializeKeyboardControls() {
+    ?"键盘控制已初始化";
+}
+
+void InitializeTouchControls() {
+    ?"触摸控制已初始化";
+}
+
+// 演示常量在实际场景中的应用
+class GGameSettings : GObj {
+    int m_nScreenWidth = SCREEN_WIDTH;
+    int m_nScreenHeight = SCREEN_HEIGHT;
+    string m_sGameTitle = GAME_TITLE;
+    
+    void ShowSettings() {
+        ?"游戏设置:";
+        ?"- 标题: " + m_sGameTitle;
+        ?"- 屏幕分辨率: " + m_nScreenWidth + "x" + m_nScreenHeight;
+        ?"- 最大敌人数量: " + MAX_ENEMIES;
+        ?"- 初始生命值: " + Constants.DEFAULT_LIVES;
+    }
+}
+
+// 入口点
+void main() {
+    ?"100";        // 运行时输出
+    ?"\"ABC\"";    // 输出字符串ABC
+    ?"define test" // 条件编译的输出
+    ?"foo end"     // 函数返回后的输出
+    
+    ShowConstants();
+    ShowPlatformInfo();
+    
+    InitializeGame();
+    
+    GGameSettings settings;
+    settings.ShowSettings();
+} 

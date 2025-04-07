@@ -1,0 +1,428 @@
+/*
+ * 简单游戏示例 - Gbox引擎
+ * 基础2D游戏，包含玩家移动、敌人和碰撞检测
+ */
+
+// 全局变量（实际上是g_pDeskTop的成员变量）
+obj m_pPlayer;
+var m_szEnemies = nil;
+int m_nScore = 0, m_nGameState = 0; // 0=菜单, 1=游戏中, 2=游戏结束
+
+// 常量
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+#define PLAYER_SPEED 5.0
+#define ENEMY_SPEED 2.0
+#define MAX_ENEMIES 10
+
+// 玩家类
+class GPlayer : GObjShape {
+    int m_nHealth = 100;
+    vec2 m_vVelocity;
+    
+    // 添加方向控制变量
+    bool m_bUp = false;
+    bool m_bDown = false;
+    bool m_bLeft = false;
+    bool m_bRight = false;
+    
+    // 对象创建时自动调用
+    void OnCreate() {
+        // 执行初始化
+        SetShape(0xff00ff00,0xffffffff,5);
+        SetPos(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+        SetSize(50, 50);
+        SetColor(0xffffffff); // 白色，完全不透明
+    }
+    
+    // 公共重置方法，可以从外部调用
+    void Reset() {
+        m_nHealth = 100;
+        SetPos(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+        m_bUp = false;
+        m_bDown = false;
+        m_bLeft = false;
+        m_bRight = false;
+    }
+    
+    void Update() {
+        // 基于方向变量计算速度
+        m_vVelocity = (0, 0);
+        
+        if(m_bUp) {
+            m_vVelocity.y -= PLAYER_SPEED;
+        }
+        if(m_bDown) {
+            m_vVelocity.y += PLAYER_SPEED;
+        }
+        if(m_bLeft) {
+            m_vVelocity.x -= PLAYER_SPEED;
+        }
+        if(m_bRight) {
+            m_vVelocity.x += PLAYER_SPEED;
+        }
+        
+        // 更新位置，直接使用m_vPos
+        m_vPos.x += m_vVelocity.x;
+        m_vPos.y += m_vVelocity.y;
+        
+        // 保持玩家在屏幕范围内
+        m_vPos.x = clamp(m_vPos.x, 25, SCREEN_WIDTH - 25);
+        m_vPos.y = clamp(m_vPos.y, 25, SCREEN_HEIGHT - 25);
+    }
+    
+    // 设置移动方向
+    void SetDirection(int key, bool pressed) {
+        switch(key) {
+            case GVK_UP:
+                m_bUp = pressed;
+                break;
+            case GVK_DOWN:
+                m_bDown = pressed;
+                break;
+            case GVK_LEFT:
+                m_bLeft = pressed;
+                break;
+            case GVK_RIGHT:
+                m_bRight = pressed;
+                break;
+        }
+    }
+    
+    void TakeDamage(int amount) {
+        m_nHealth -= amount;
+        if(m_nHealth <= 0) {
+            // 游戏结束
+            g_pDeskTop.ChangeGameState(2);
+        }
+    }
+    
+    int GetHealth() {
+        return m_nHealth;
+    }
+}
+
+// 敌人类
+class GEnemy : GObjShape {
+    float m_fSpeed;
+    obj m_pTarget; // 玩家引用
+    
+    void Init(obj player, float speed = ENEMY_SPEED) {
+        m_pTarget = player;
+        m_fSpeed = speed;
+        
+        // 在屏幕边缘随机位置
+        int side = rand(4); // 0=上, 1=右, 2=下, 3=左
+        
+        switch(side) {
+            case 0: // 上边
+                m_vPos.x = rand(SCREEN_WIDTH);
+                m_vPos.y = 0;
+                break;
+            case 1: // 右边
+                m_vPos.x = SCREEN_WIDTH;
+                m_vPos.y = rand(SCREEN_HEIGHT);
+                break;
+            case 2: // 下边
+                m_vPos.x = rand(SCREEN_WIDTH);
+                m_vPos.y = SCREEN_HEIGHT;
+                break;
+            case 3: // 左边
+                m_vPos.x = 0;
+                m_vPos.y = rand(SCREEN_HEIGHT);
+                break;
+        }
+        
+        SetSize(40, 40);
+        SetColor(0xffff0000); // 红色
+    }
+    
+    void Update() {
+        if(m_pTarget) {
+            // 向玩家移动，直接使用m_vPos
+            vec2 dir;
+            dir.x = m_pTarget.m_vPos.x - m_vPos.x;
+            dir.y = m_pTarget.m_vPos.y - m_vPos.y;
+            
+            float len = sqrt(dir.x * dir.x + dir.y * dir.y);
+            if(len > 0) {
+                dir.x /= len;
+                dir.y /= len;
+            }
+            
+            m_vPos.x += dir.x * m_fSpeed;
+            m_vPos.y += dir.y * m_fSpeed;
+        }
+    }
+}
+
+// UI文本类
+class GScoreText : GObjText {
+    void Init() {
+        SetPos(20, 20);
+        SetColor(0xffffffff); // 白色
+        SetFontSize(24);
+        Update(0);
+    }
+    
+    void Update(int score) {
+        SetText("分数: " + score);
+    }
+}
+
+// 生命条类
+class GHealthBar : GObjShape {
+    void Init(int maxwidth) {
+        SetPos(20, 50);
+        SetSize(maxwidth, 20);
+        SetColor(0xff00ff00); // 绿色
+    }
+    
+    void Update(int health) {
+        // 生命百分比
+        float percentage = health / 100.0;
+        int width = 200 * percentage;
+        SetSize(width, 20);
+        
+        // 根据生命值调整颜色
+        if(health > 70) {
+            SetColor(0xff00ff00); // 绿色
+        } else if(health > 30) {
+            SetColor(0xffffff00); // 黄色
+        } else {
+            SetColor(0xffff0000); // 红色
+        }
+    }
+}
+
+// 游戏UI
+obj m_pScoreText;
+obj m_pHealthBar;
+obj m_pMenuText;
+obj m_pGameOverText;
+
+// 碰撞检测
+bool CheckCollision(obj a, obj b) {
+    // 直接使用m_vPos和m_vSize
+    return (a.m_vPos.x < b.m_vPos.x + b.m_vSize.x &&
+            a.m_vPos.x + a.m_vSize.x > b.m_vPos.x &&
+            a.m_vPos.y < b.m_vPos.y + b.m_vSize.y &&
+            a.m_vPos.y + a.m_vSize.y > b.m_vPos.y);
+}
+
+// 生成敌人
+void enemy_timer_spawn() {
+    if(m_nGameState != 1) {
+        KillTimer("enemy_timer_spawn");
+        return;
+    }
+    
+    if(m_szEnemies.size < MAX_ENEMIES) {
+        obj enemy = new GEnemy;
+        enemy.Init(m_pPlayer, ENEMY_SPEED + m_nScore / 100.0);
+        m_szEnemies.append(enemy);
+    }
+    
+    // 根据游戏分数调整敌人生成频率
+    int delay = 2000 - m_nScore * 5;
+    if(delay < 500) delay = 500;
+    
+    // 终止之前的定时器并设置新的时间间隔
+    KillTimer("enemy_timer_spawn");
+    SetTimer(delay / 1000.0, "enemy_timer_spawn");
+}
+
+// 游戏更新循环
+void game_timer_update() {
+    if(m_nGameState == 1) { // 游戏中
+        // 更新玩家
+        m_pPlayer.Update();
+        
+        // 更新生命条
+        m_pHealthBar.Update(m_pPlayer.GetHealth());
+        
+        // 更新敌人并检查碰撞
+        for(int i = 0; i < m_szEnemies.size; i++) {
+            obj enemy = m_szEnemies[i];
+            enemy.Update();
+            
+            // 检查与玩家的碰撞
+            if(CheckCollision(m_pPlayer, enemy)) {
+                m_pPlayer.TakeDamage(10);
+                m_pHealthBar.Update(m_pPlayer.GetHealth());
+                
+                // 移除敌人
+                SafeDelObj(enemy);
+                m_szEnemies.remove(i);
+                i--; // 调整索引
+                
+                // 增加分数
+                m_nScore += 10;
+                m_pScoreText.Update(m_nScore);
+            }
+        }
+    }
+}
+
+// 游戏状态管理
+void ChangeGameState(int newstate) {
+    m_nGameState = newstate;
+    
+    switch(m_nGameState) {
+        case 0: // 菜单
+            // 终止游戏相关定时器
+            KillTimer("enemy_timer_spawn");
+            
+            m_pMenuText.SetShow(true);
+            m_pScoreText.SetShow(false);
+            m_pHealthBar.SetShow(false);
+            m_pGameOverText.SetShow(false);
+            
+            // 清除敌人
+            obj enemy;
+            for(int i = 0; i < m_szEnemies.size; i++) {
+                enemy = m_szEnemies[i];
+                SafeDelObj(enemy);
+            }
+            m_szEnemies = nil;
+            break;
+            
+        case 1: // 游戏中
+            m_pMenuText.SetShow(false);
+            m_pScoreText.SetShow(true);
+            m_pHealthBar.SetShow(true);
+            m_pGameOverText.SetShow(false);
+            
+            // 使用微线程来加载和初始化玩家，避免阻塞主线程
+            StartTask("TaskInitPlayer");
+            
+            // 重置分数
+            m_nScore = 0;
+            m_pScoreText.Update(m_nScore);
+            
+            // 开始生成敌人定时器
+            SetTimer(2.0, "enemy_timer_spawn");
+            break;
+            
+        case 2: // 游戏结束
+            // 终止游戏相关定时器
+            KillTimer("enemy_timer_spawn");
+            
+            m_pMenuText.SetShow(false);
+            m_pScoreText.SetShow(true);
+            m_pHealthBar.SetShow(true);
+            m_pGameOverText.SetShow(true);
+            break;
+    }
+}
+
+// 微线程函数，初始化玩家
+void TaskInitPlayer() {
+    // 模拟加载延迟
+    Wait(0.5);
+    
+    // 重置玩家
+    if(!m_pPlayer) {
+        m_pPlayer = new GPlayer;
+        m_pPlayer.Reset();
+    } else {
+        m_pPlayer.Reset();
+    }
+}
+
+// 初始化游戏
+void InitGame() {
+    // 创建UI元素
+    m_pScoreText = new GScoreText;
+    m_pScoreText.Init();
+    
+    m_pHealthBar = new GHealthBar;
+    m_pHealthBar.Init(200);
+    
+    m_pMenuText = new GObjText;
+    m_pMenuText.SetPos(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2);
+    m_pMenuText.SetColor(0xffffffff);
+    m_pMenuText.SetFontSize(32);
+    m_pMenuText.SetText("按空格键开始");
+    
+    m_pGameOverText = new GObjText;
+    m_pGameOverText.SetPos(SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2);
+    m_pGameOverText.SetColor(0xffff0000);
+    m_pGameOverText.SetFontSize(32);
+    m_pGameOverText.SetText("游戏结束");
+    m_pGameOverText.SetShow(false);
+    
+    // 从菜单开始
+    g_pDeskTop.ChangeGameState(0);
+    
+    // 设置游戏更新定时器 (60 FPS)
+    SetTimer(1/60.0, "game_timer_update");
+}
+
+// 按键处理函数 - 要在g_pDeskTop的OnKeyDown中调用
+void OnKeyDown(int key) {
+    // 方向键 - 设置玩家移动方向
+    if(m_nGameState == 1 && m_pPlayer) {
+        m_pPlayer.SetDirection(key, true);
+    }
+    
+    // 空格键 - 切换游戏状态
+    if(key == GVK_SPACE) {
+        if(m_nGameState == 0) {
+            // 从菜单到游戏
+            g_pDeskTop.ChangeGameState(1);
+        }
+        else if(m_nGameState == 2) {
+            // 从游戏结束到菜单
+            g_pDeskTop.ChangeGameState(0);
+        }
+    }
+    
+    // 在游戏状态按X可以快速结束游戏
+    if(m_nGameState == 1 && key == GVK_X) {
+        g_pDeskTop.ChangeGameState(2);
+    }
+}
+
+// 按键释放函数 - 要在g_pDeskTop的OnKeyUp中调用
+void OnKeyUp(int key) {
+    // 方向键 - 停止玩家移动
+    if(m_nGameState == 1 && m_pPlayer) {
+        m_pPlayer.SetDirection(key, false);
+    }
+}
+
+// 敌人碰撞检测和分数更新
+void UpdateCollisions() {
+    if(!m_pPlayer || m_szEnemies == nil || m_nGameState != 1) {
+        return;
+    }
+    
+    obj enemy;
+    // 遍历所有敌人，检查与玩家的碰撞
+    for(int i = 0; i < m_szEnemies.size; i++) {
+        enemy = m_szEnemies[i];
+        if(enemy != nil && CheckCollision(m_pPlayer, enemy)) {
+            // 玩家受伤 - 直接调用m_pPlayer的方法，不需要强制类型转换
+            m_pPlayer.TakeDamage(10);
+            
+            // 更新血条
+            m_pHealthBar.SetSize(m_pPlayer.m_nHealth * 2, 20);
+            
+            // 检查玩家是否死亡
+            if(m_pPlayer.m_nHealth <= 0) {
+                // 游戏结束
+                g_pDeskTop.ChangeGameState(2);
+                break;
+            }
+            
+            // 移除碰撞的敌人
+            SafeDelObj(enemy);
+            m_szEnemies.remove(i);
+            i--; // 调整索引
+        }
+    }
+}
+
+// 直接初始化游戏，而不是放在main函数中
+InitGame(); 
