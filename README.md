@@ -1,20 +1,19 @@
 # Gbox 引擎文档
 
-这个仓库包含Gbox 2D游戏引擎的文档、语法参考和示例代码，同时提供了Cursor编辑器的AI辅助配置。
+这个仓库包含Gbox游戏引擎的文档、语法参考和示例代码，同时提供了Cursor编辑器的AI辅助配置。Gbox是一个强大的游戏引擎，支持2D和3D游戏开发。
 
 ## 项目内容
 
-- **doc/** - 文档目录
-  - `gbox_syntax.md` - Gbox脚本语言语法参考
-  - `gbox_api.md` - Gbox引擎API文档
+- **.cursor/rules/** - Cursor编辑器AI配置和文档
+  - `gbox.md` - Gbox语法和API规则文件
+  - **doc/** - 文档目录
+    - `gbox_syntax.md` - Gbox脚本语言语法参考
+    - `gbox_api.md` - Gbox引擎API文档
 
 - **examples/** - 示例代码目录
   - `simple_game.gb` - 简单游戏示例
   - `enum_example.gb` - 枚举使用示例
   - `preprocessor_example.gb` - 预处理器示例
-
-- **.cursor/** - Cursor编辑器AI配置
-  - `rules/gbox.md` - Gbox语法和API规则文件
 
 ## 在Cursor中使用Gbox
 
@@ -39,24 +38,23 @@
 3. **复制必要文件到现有项目**
    - 创建必要的目录结构
      ```bash
-     mkdir -p path/to/your/project/.cursor/rules
-     mkdir -p path/to/your/project/doc
+     mkdir -p path/to/your/project/.cursor/rules/doc
      ```
    
-   - 复制规则文件
+   - 复制规则文件和文档
      ```bash
      cp gbox_docs/.cursor/rules/gbox.md path/to/your/project/.cursor/rules/
-     cp gbox_docs/doc/gbox_syntax.md path/to/your/project/doc/
-     cp gbox_docs/doc/gbox_api.md path/to/your/project/doc/
+     cp gbox_docs/.cursor/rules/doc/gbox_syntax.md path/to/your/project/.cursor/rules/doc/
+     cp gbox_docs/.cursor/rules/doc/gbox_api.md path/to/your/project/.cursor/rules/doc/
      ```
 
 ### 文件依赖关系
 
-规则文件`.cursor/rules/gbox.md`通过`@doc/gbox_syntax.md`和`@doc/gbox_api.md`引用文档文件，保持目录结构不变。
+规则文件`.cursor/rules/gbox.md`通过`@doc/gbox_syntax.md`和`@doc/gbox_api.md`引用文档文件，这些文档位于`.cursor/rules/doc/`目录中。
 
 ## 语法文档
 
-`doc/gbox_syntax.md`包含了完整的Gbox脚本语言语法参考，包括：
+`.cursor/rules/doc/gbox_syntax.md`包含了完整的Gbox脚本语言语法参考，包括：
 - 基础语法（注释、变量）
 - 类和对象
 - 函数
@@ -66,7 +64,7 @@
 
 ## API文档
 
-`doc/gbox_api.md`包含了Gbox引擎的API文档，帮助你了解可用的类、方法和属性。
+`.cursor/rules/doc/gbox_api.md`包含了Gbox引擎的API文档，帮助你了解可用的类、方法和属性。
 
 ## 示例
 
